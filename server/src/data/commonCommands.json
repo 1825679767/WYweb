@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "name": "关闭服务器",
+    "command": "server shutdown 120",
+    "description": "延迟2分钟关闭服务器"
+  },
+  {
+    "id": 3,
+    "name": "广播消息",
+    "command": "announce ",
+    "description": "向所有在线玩家广播消息"
+  },
+  {
+    "id": 4,
+    "name": "服务器信息",
+    "command": "server info",
+    "description": "查询服务器信息"
+  },
+  {
+    "id": 6,
+    "name": "重置lua",
+    "command": "reload eluna",
+    "description": "重置lua"
+  }
+]

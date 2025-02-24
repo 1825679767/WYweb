@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 临时禁用消息动画 */
+.animate-message-in {
+  animation: none !important;
+  opacity: 1;
+  transform: none;
+} 
