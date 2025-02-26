@@ -28,6 +28,7 @@ import { Chat } from './components/Chat'
 import UnblockCharacter from './components/UnblockCharacter'
 import AccountSecurity from './components/AccountSecurity'
 import GMPanel from './components/GMPanel'
+import GameShop from './components/GameShop'
 
 // 登录组件
 function Login({ onLogin, isDarkMode, showToast, setIsGM }) {
@@ -375,10 +376,17 @@ const features = [
   },
   {
     id: 'shop',
-    name: '游戏商场',
+    name: '游戏商城',
     description: '购买游戏内物品',
     icon: ShoppingCartIcon,
     color: 'from-red-500 to-orange-500'
+  },
+  {
+    id: 'gifts',
+    name: '礼包兑换',
+    icon: GiftIcon,
+    color: 'from-pink-500 to-rose-600',
+    description: '兑换各类游戏礼包'
   },
   {
     id: 'market',
@@ -400,13 +408,6 @@ const features = [
     icon: TrophyIcon,
     color: 'from-amber-500 to-yellow-600',
     description: '查看和追踪游戏成就'
-  },
-  {
-    id: 'gifts',
-    name: '礼包兑换',
-    icon: GiftIcon,
-    color: 'from-pink-500 to-rose-600',
-    description: '兑换各类游戏礼包'
   },
   {
     id: 'repair',
@@ -736,6 +737,14 @@ function App() {
       case 'gm-panel':
         return (
           <GMPanel 
+            onBack={handleBack}
+            isDarkMode={isDarkMode}
+          />
+        );
+      case 'shop':
+        return (
+          <GameShop 
+            username={currentUser.username}
             onBack={handleBack}
             isDarkMode={isDarkMode}
           />

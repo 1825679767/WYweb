@@ -3,8 +3,8 @@ export const soapConfig = {
   soapServer: {
     host: 'localhost',
     port: 7878,
-    username: 'admin',
-    password: 'your_password'
+    username: '1',
+    password: '1'
   },
 
   // SOAP 命令配置

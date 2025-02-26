@@ -46,8 +46,7 @@ class AuthService {
 
   // 生成注册数据（salt和verifier）
   async generateSRP6RegistrationData(username, password) {
-    const salt = crypto.randomBytes(32);
-    const verifier = await this.calculateSRP6Verifier(username, password);
+    const { salt, verifier } = await this.calculateSRP6Verifier(username, password);
     return { salt, verifier };
   }
 
@@ -69,9 +68,9 @@ class AuthService {
       salt = crypto.randomBytes(32);
     }
 
-    // 第一步：计算h1 = SHA1(username:password)
+    // 第一步：计算h1 = SHA1(username:password) - 确保都是大写，符合PHP实现
     const h1 = crypto.createHash('sha1')
-      .update(username.toUpperCase() + ':' + password.toUpperCase())
+      .update((username.toUpperCase() + ':' + password.toUpperCase()))
       .digest();
 
     // 第二步：计算h2 = SHA1(salt || h1)
@@ -89,14 +88,14 @@ class AuthService {
     const verifier = this.g.modPow(h2Int, this.N);
 
     // 转换回字节数组（小端序）并填充到32字节
-    const verifierBuffer = Buffer.alloc(32);
+    const verifierBuffer = Buffer.alloc(32, 0); // 初始化为全0
     let temp = verifier;
     for (let i = 0; i < 32; i++) {
       verifierBuffer[i] = temp.and(0xFF).valueOf();
       temp = temp.shiftRight(8);
     }
 
-    return verifierBuffer;
+    return { salt, verifier: verifierBuffer };
   }
 
   // 注册新账号
@@ -143,6 +142,9 @@ class AuthService {
       ]);
 
       return result.insertId;
+    } catch (error) {
+      console.error('注册失败:', error);
+      throw error;
     } finally {
       connection.release();
     }
@@ -152,7 +154,7 @@ class AuthService {
   async verifyLogin(username, password) {
     const connection = await this.authPool.getConnection();
     try {
-      console.log('验证登录:', username);
+      console.log('开始验证登录:', username);
 
       const [rows] = await connection.execute(
         'SELECT username, HEX(salt) as salt, HEX(verifier) as verifier FROM account WHERE username = ?',
@@ -176,7 +178,7 @@ class AuthService {
       );
 
       // 比较验证器
-      const isValid = calculatedVerifier.toString('hex').toUpperCase() === storedVerifierHex.toUpperCase();
+      const isValid = calculatedVerifier.verifier.toString('hex').toUpperCase() === storedVerifierHex.toUpperCase();
       console.log('验证结果:', isValid);
 
       // 获取用户的 GM 权限
@@ -195,8 +197,11 @@ class AuthService {
         message: isValid ? '' : '密码错误',
         isGM // 返回 GM 权限状态
       };
+    } catch (error) {
+      console.error('登录验证错误:', error);
+      throw error;
     } finally {
-      connection.release();
+      connection.release();  // 确保连接被释放
     }
   }
 
@@ -417,21 +422,22 @@ class AuthService {
   // 获取聊天记录
   async getChatHistory(limit = 100) {
     try {
+      // 修改 SQL 查询，确保参数类型正确
       const [rows] = await this.charactersPool.execute(
         `SELECT 
           c.*,
-          a.username as 账号名称
+          COALESCE(a.username, '') as 账号名称
         FROM _WYweb聊天记录 c
         LEFT JOIN acore_auth.account a ON a.id = c.账号ID
         ORDER BY c.创建时间 DESC
         LIMIT ?`,
-        [limit]
+        [Number(limit)] // 确保 limit 是数字类型
       );
 
       return rows.map(row => ({
         id: row.id,
         accountId: row.账号ID,
-        accountName: row.账号名称,
+        accountName: row.账号名称 || '',  // 使用空字符串作为默认值
         characterId: row.角色ID,
         characterName: row.角色名称,
         race: row.角色种族,

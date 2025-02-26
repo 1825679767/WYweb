@@ -20,9 +20,7 @@ const commonConfig = {
   
   // 跨域配置
   cors: {
-    origin: environment === 'production' 
-      ? ['https://your-domain.com'] 
-      : ['http://localhost:5173'],
+    origin: true,  // 允许所有来源
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true

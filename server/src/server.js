@@ -1,16 +1,22 @@
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
-import { initializeWebSocket } from './services/websocketService.js';
+import { WebSocketServer } from 'ws';  // 修改导入方式
 import { authService } from './services/authService.js';
 import { config } from './config/index.js';
-import WebSocket from 'ws';
 import apiRoutes from './routes/api.js'; // 确保导入了API路由
+import shopRoutes from './routes/shop.js';
 
 const app = express();
-app.use(cors()); // 允许所有来源的请求
+app.use(cors({
+  origin: '*',  // 允许所有来源
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json());
 app.use('/api', apiRoutes); // 使用API路由
+app.use('/api/shop', shopRoutes);
 
 // 添加登录路由
 app.post('/api/login', async (req, res) => {
@@ -310,10 +316,37 @@ app.post('/api/remote-command', async (req, res) => {
   }
 });
 
-const server = http.createServer(app);
-const wss = initializeWebSocket(server);
+// 添加错误处理中间件
+app.use((err, req, res, next) => {
+  console.error('服务器错误:', err);
+  res.status(500).json({
+    success: false,
+    message: '服务器错误: ' + err.message
+  });
+});
 
-const PORT = config.port || 3002;  // 使用配置中的端口或默认3002
-server.listen(PORT, () => {
+const server = http.createServer(app);
+
+// 修改 WebSocket 服务器初始化
+const wss = new WebSocketServer({ 
+  server: server,  // 直接传入 server 实例
+  perMessageDeflate: false  // 禁用消息压缩
+});
+
+// 添加 WebSocket 连接处理
+wss.on('connection', (ws) => {
+  console.log('新的 WebSocket 连接');
+  
+  ws.on('message', (message) => {
+    console.log('收到消息:', message.toString());
+  });
+
+  ws.on('close', () => {
+    console.log('WebSocket 连接关闭');
+  });
+});
+
+const PORT = config.port || 3003;
+server.listen(PORT, '0.0.0.0', () => {  // 监听所有网络接口
   console.log(`Server running on port ${PORT}`);
 }); 

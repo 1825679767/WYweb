@@ -1,15 +1,19 @@
 import http from 'http';
 import xml2js from 'xml2js';
+import { soapConfig } from '../config/soap.js';
 
 export const sendSoapCommand = (command) => {
   return new Promise((resolve, reject) => {
+    const { host, port, username, password } = soapConfig.soapServer;
+    const { timeout } = soapConfig.connection;
+
     const req = http.request({
-      port: 7878,
+      hostname: host,
+      port: port,
       method: "POST",
-      hostname: "localhost",
-      auth: "1:1",
+      auth: `${username}:${password}`,  // 使用配置的用户名和密码
       headers: { 'Content-Type': 'application/xml' },
-      timeout: 5000 // 添加超时设置
+      timeout: timeout  // 使用配置的超时时间
     }, res => {
       let data = '';
       
