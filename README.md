@@ -25,7 +25,7 @@ AZ魔兽世界网页控制系统！
 
 - 将两个sql文件分别导入A库和C库。
 
-- 右键使用文本打开\server\src\config目录下的database.js和soap,js文件，然后修改为你自己的数据库和soap信息。（注意，需要服务器提起修改配置，允许soap端口）
+- 右键使用文本打开\server\src\config目录下的database.js和soap,js文件，然后修改为你自己的数据库和soap信息。（注意，需要服务器提前修改配置，允许soap端口）
 
 4. **安装依赖**  
 - 分别在 `client` 和 `server` 文件夹中的地址栏输出 `cmd`，然后在弹出的命令行窗口中执行以下命令来安装依赖：  npm install 。 如果下载失败，可能需要使用梯子。
