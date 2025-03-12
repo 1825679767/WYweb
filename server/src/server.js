@@ -6,14 +6,38 @@ import { authService } from './services/authService.js';
 import { config } from './config/index.js';
 import apiRoutes from './routes/api.js'; // 确保导入了API路由
 import shopRoutes from './routes/shop.js';
+import rateLimit from 'express-rate-limit';  // 使用 import 替代 require
 
 const app = express();
-app.use(cors({
-  origin: '*',  // 允许所有来源
+
+// 改进CORS配置
+const corsOptions = {
+  origin: config.environment === 'production' 
+    ? ['https://yourdomain.com'] 
+    : ['http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
-}));
+};
+
+app.use(cors(corsOptions));
+
+// 添加速率限制
+// const rateLimit = require('express-rate-limit');  // 删除这行
+
+// 登录限制
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15分钟
+  max: 5, // 每IP限制5次尝试
+  message: {
+    success: false,
+    message: '尝试次数过多，请15分钟后再试'
+  }
+});
+
+// 应用到登录路由
+app.use('/api/login', loginLimiter);
+
 app.use(express.json());
 app.use('/api', apiRoutes); // 使用API路由
 app.use('/api/shop', shopRoutes);
@@ -316,13 +340,20 @@ app.post('/api/remote-command', async (req, res) => {
   }
 });
 
-// 添加错误处理中间件
+// 添加全局错误处理中间件
 app.use((err, req, res, next) => {
   console.error('服务器错误:', err);
+  
+  // 不向客户端暴露详细错误
   res.status(500).json({
     success: false,
-    message: '服务器错误: ' + err.message
+    message: '服务器内部错误'
   });
+});
+
+// 处理未捕获的Promise异常
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('未处理的Promise异常:', reason);
 });
 
 const server = http.createServer(app);

@@ -152,22 +152,23 @@ class AuthService {
 
   // 验证登录
   async verifyLogin(username, password) {
-    const connection = await this.authPool.getConnection();
+    let connection;
     try {
-      console.log('开始验证登录:', username);
-
+      connection = await this.authPool.getConnection();
+      
+      // 使用参数化查询防止SQL注入
       const [rows] = await connection.execute(
-        'SELECT username, HEX(salt) as salt, HEX(verifier) as verifier FROM account WHERE username = ?',
+        'SELECT username, salt, verifier FROM account WHERE username = ?',
         [username.toUpperCase()]
       );
-
+      
       console.log('查询结果:', rows);
 
       if (rows.length === 0) {
         return { success: false, message: '账号不存在' };
       }
 
-      const { salt: saltHex, verifier: storedVerifierHex } = rows[0];
+      const { salt: saltHex, verifier: storedVerifier } = rows[0];
       const salt = Buffer.from(saltHex, 'hex');
       
       // 计算验证器
@@ -177,8 +178,17 @@ class AuthService {
         salt
       );
 
-      // 比较验证器
-      const isValid = calculatedVerifier.verifier.toString('hex').toUpperCase() === storedVerifierHex.toUpperCase();
+      // 比较验证器 - 直接比较Buffer或转换为相同格式后比较
+      let isValid;
+      if (Buffer.isBuffer(storedVerifier)) {
+        // 如果storedVerifier是Buffer，直接比较Buffer
+        isValid = Buffer.compare(calculatedVerifier.verifier, storedVerifier) === 0;
+      } else {
+        // 如果storedVerifier是十六进制字符串，转换为相同格式后比较
+        const storedVerifierHex = Buffer.isBuffer(storedVerifier) ? storedVerifier.toString('hex') : storedVerifier;
+        isValid = calculatedVerifier.verifier.toString('hex').toUpperCase() === storedVerifierHex.toString().toUpperCase();
+      }
+      
       console.log('验证结果:', isValid);
 
       // 获取用户的 GM 权限
@@ -198,10 +208,10 @@ class AuthService {
         isGM // 返回 GM 权限状态
       };
     } catch (error) {
-      console.error('登录验证错误:', error);
-      throw error;
+      console.error('数据库查询错误:', error);
+      throw new Error('验证登录失败');
     } finally {
-      connection.release();  // 确保连接被释放
+      if (connection) connection.release();
     }
   }
 

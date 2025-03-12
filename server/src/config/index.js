@@ -41,5 +41,6 @@ export const config = {
   soap: soapConfig,
   server: {
     port: 3002
-  }
+  },
+  environment: process.env.NODE_ENV || 'development'
 }; 
